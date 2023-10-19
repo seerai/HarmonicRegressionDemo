@@ -2,3 +2,4 @@ geodesic-api[all]
 tesseract-sdk
 numpy
 earthengine-api
+zarr

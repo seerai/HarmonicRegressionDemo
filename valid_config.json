@@ -1,13 +1,13 @@
 {
     "image": "harmonic-regression:v0.0.1",
     "test_data": {
-        "job_id": "my-job-id",
-        "project": "my-project"
+        "job_id": "85dd5a9b111a3a058c89d7dd68b8138b08bd96a0",
+        "project": "har-reg"
     },
     "asset_bands": [
         {
             "asset_name": "landsat",
-            "bands": [2,3,4,5,6,7]
+            "bands": [0,1,2,3,4,5]
         }
     ],
     "args": {

@@ -17,9 +17,9 @@ class Model:
         self.period = args.get("period", 365.2421891)
         self.n_params = 2 * self.forder + 2
 
-    def inference(self, assets: dict, logger: logging.Logger, **kwargs) -> dict:
+    def inference(self, assets: dict, grids: dict, logger: logging.Logger, **kwargs) -> dict:
         # check that the number of time steps is greater than the number of parameters
-        if assets["landsat"].shape[0] < self.n_params:
+        if assets["$0"].shape[0] < self.n_params:
             logger.error(
                 f"Fit is underconstrained. Number of time steps ({assets['landsat'].shape[0]}) must be greater than the number of parameters ({self.n_params})"
             )
@@ -30,24 +30,45 @@ class Model:
         tc_data = tasseled_cap(assets["landsat"])
 
         t, b, y, x = tc_data.shape
-        times = assets["landsat[grid-t]"][:, 0].astype("datetime64[D]")
+        times = grids["$0"]["t"][:, 0].astype("datetime64[D]").astype(int)
+
+        logger.info(
+            f"Grids Keys: {grids.keys() = }, \
+                    {grids['$0'].keys()}, \
+                    {grids['$0']['t'].shape = } \
+                    {grids['$0']['y'].shape = } \
+                    {grids['$0']['x'].shape = } \
+                    "
+        )
 
         logger.info("Running regression...")
-        x = lstsq(times, tc_data, order=self.forder)
+        x = lstsq(times, tc_data, order=self.forder, censored=True)
         x = np.expand_dims(x, axis=0)
         return {
-            "brightness": x[:, :, 0, :, :],
-            "greenness": x[:, :, 1, :, :],
-            "wetness": x[:, :, 2, :, :],
+            "brightness_params": x[:, :, 0, :, :].astype("<f2"),
+            "greenness_params": x[:, :, 1, :, :].astype("<f2"),
+            "wetness_params": x[:, :, 2, :, :].astype("<f2"),
         }
 
     def get_model_info(self):
         return {
-            "inputs": [{"name": "landsat", "dtype": "i2", "shape": [48, 6, 256, 256]}],
+            "inputs": [{"name": "landsat", "dtype": "i2", "shape": [200, 6, 256, 256]}],
             "outputs": [
-                {"name": "brightness_params", "dtype": "f2", "shape": [1, self.n_params, 256, 256]},
-                {"name": "greenness_params", "dtype": "f2", "shape": [1, self.n_params, 256, 256]},
-                {"name": "wetness_params", "dtype": "f2", "shape": [1, self.n_params, 256, 256]},
+                {
+                    "name": "brightness_params",
+                    "dtype": "<f2",
+                    "shape": [1, self.n_params, 256, 256],
+                },
+                {
+                    "name": "greenness_params",
+                    "dtype": "<f2",
+                    "shape": [1, self.n_params, 256, 256],
+                },
+                {
+                    "name": "wetness_params",
+                    "dtype": "<f2",
+                    "shape": [1, self.n_params, 256, 256],
+                },
             ],
         }
 
@@ -74,7 +95,36 @@ def fourier_matrix(times, order=4, P=365.2421891):
     return A
 
 
-def lstsq(times, data, order=4, P=365.2421891):
+def censored_lstsq(A, B, M):
+    """Solves least squares problem subject to missing data.
+
+    Code taken from blog: https://alexhwilliams.info/itsneuronalblog/2018/02/26/censored-lstsq/
+    If you are masking out np.nan values, you will need to set them to another number. These
+    indices will be ignored because they are multiplied by 0, but if they are left as NaNs,
+    the whole fit on that row will be NaN.
+
+    Args:
+        A (ndarray) : m x r matrix
+        B (ndarray) : m x n matrix
+        M (ndarray) : m x n binary masking matrix (zeros indicate missing values)
+
+    Returns:
+        X (ndarray) : r x n matrix that minimizes norm(M*(AX - B))
+    """
+
+    # Note: we should check A is full rank but we won't bother...
+
+    # if B is a vector, simply drop out corresponding rows in A
+    if B.ndim == 1 or B.shape[1] == 1:
+        return np.linalg.leastsq(A[M], B[M])[0]
+
+    # else solve via tensor representation
+    rhs = np.dot(A.T, M * B).T[:, :, None]  # n x r x 1 tensor
+    T = np.matmul(A.T[None, :, :], M.T[:, :, None] * A[None, :, :])  # n x r x r tensor
+    return np.squeeze(np.linalg.solve(T, rhs)).T  # transpose to get r x n
+
+
+def lstsq(times, data, order=4, P=365.2421891, censored=True):
     """Least squares fit of a fourier series to a target using scipy.linalg.lstsq
 
     Args:
@@ -83,13 +133,19 @@ def lstsq(times, data, order=4, P=365.2421891):
         order (int, optional): Order of the fourier series. Defaults to 4.
         P (float, optional): Period of the fourier series in whatever units your data
            appears in. Defaults to 365.2421891 which is one siderial year in days.
+        censored (bool, optional): Whether to use censored least squares. Use this
+           option if there are NaN values in the data array. Defaults to True.
     """
     A = fourier_matrix(times, order=order, P=P)
     t, b, y, x = data.shape
     data = np.moveaxis(data, 0, -1)
     data = data.reshape(y * x * b, t)
-    params, res, rank, s = np.linalg.lstsq(A, data.T, rcond=None)
-    print(f"{params.shape = }")
+    if censored:
+        M = ~np.isnan(data)
+        np.nan_to_num(data, copy=False, nan=-1.0)
+        params = censored_lstsq(A, data.T, M.T)
+    else:
+        params, _, _, _ = np.linalg.lstsq(A, data.T, rcond=None)
     return params.reshape(2 * order + 2, b, y, x)
 
 
@@ -104,7 +160,8 @@ def tasseled_cap(data: np.ndarray) -> np.ndarray:
             [0.3029, 0.2786, 0.4733, 0.5599, 0.508, 0.1872],  # Brightness
             [-0.2941, -0.243, -0.5424, 0.7276, 0.0713, -0.1608],  # Greenness
             [0.1511, 0.1973, 0.3283, 0.3407, -0.7117, -0.4559],  # Wetness
-        ]
+        ],
+        dtype=np.float16,
     )
     return np.einsum("ij,ljno->lino", tc_xform, data)
 
