@@ -6,6 +6,7 @@ Based on the techniques used in: https://www.sciencedirect.com/science/article/a
 import logging
 from tesseract import serve, get_model_args
 import numpy as np
+import time
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -29,25 +30,15 @@ class Model:
         logger.info("Running tasseled cap transformation...")
         tc_data = tasseled_cap(assets["landsat"])
 
-        t, b, y, x = tc_data.shape
         times = grids["$0"]["t"][:, 0].astype("datetime64[D]").astype(int)
-
-        logger.info(
-            f"Grids Keys: {grids.keys() = }, \
-                    {grids['$0'].keys()}, \
-                    {grids['$0']['t'].shape = } \
-                    {grids['$0']['y'].shape = } \
-                    {grids['$0']['x'].shape = } \
-                    "
-        )
 
         logger.info("Running regression...")
         x = lstsq(times, tc_data, order=self.forder, censored=True)
         x = np.expand_dims(x, axis=0)
         return {
-            "brightness_params": x[:, :, 0, :, :].astype("<f2"),
-            "greenness_params": x[:, :, 1, :, :].astype("<f2"),
-            "wetness_params": x[:, :, 2, :, :].astype("<f2"),
+            "brightness_params": x[:, :, 0, :, :],
+            "greenness_params": x[:, :, 1, :, :],
+            "wetness_params": x[:, :, 2, :, :],
         }
 
     def get_model_info(self):
@@ -56,17 +47,17 @@ class Model:
             "outputs": [
                 {
                     "name": "brightness_params",
-                    "dtype": "<f2",
+                    "dtype": "<f8",
                     "shape": [1, self.n_params, 256, 256],
                 },
                 {
                     "name": "greenness_params",
-                    "dtype": "<f2",
+                    "dtype": "<f8",
                     "shape": [1, self.n_params, 256, 256],
                 },
                 {
                     "name": "wetness_params",
-                    "dtype": "<f2",
+                    "dtype": "<f8",
                     "shape": [1, self.n_params, 256, 256],
                 },
             ],
@@ -125,7 +116,8 @@ def censored_lstsq(A, B, M):
 
 
 def lstsq(times, data, order=4, P=365.2421891, censored=True):
-    """Least squares fit of a fourier series to a target using scipy.linalg.lstsq
+    """Least squares fit of a fourier series to a target using either scipy.linalg.lstsq or the
+    censored least squares method.
 
     Args:
         times (np.ndarray): 1D array of times
@@ -134,15 +126,16 @@ def lstsq(times, data, order=4, P=365.2421891, censored=True):
         P (float, optional): Period of the fourier series in whatever units your data
            appears in. Defaults to 365.2421891 which is one siderial year in days.
         censored (bool, optional): Whether to use censored least squares. Use this
-           option if there are NaN values in the data array. Defaults to True.
+           option if there are NaN values (or 0 in the case of Int) in the data array. Defaults to True.
     """
     A = fourier_matrix(times, order=order, P=P)
     t, b, y, x = data.shape
     data = np.moveaxis(data, 0, -1)
     data = data.reshape(y * x * b, t)
     if censored:
-        M = ~np.isnan(data)
-        np.nan_to_num(data, copy=False, nan=-1.0)
+        # M = ~np.isnan(data)
+        M = data.astype("bool").astype(float)  # fill_value=0 so mask on 0 in the data array
+        # np.nan_to_num(data, copy=False, nan=-1.0)
         params = censored_lstsq(A, data.T, M.T)
     else:
         params, _, _, _ = np.linalg.lstsq(A, data.T, rcond=None)
