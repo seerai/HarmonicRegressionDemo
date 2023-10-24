@@ -21,9 +21,6 @@ class Model:
     def inference(self, assets: dict, grids: dict, logger: logging.Logger, **kwargs) -> dict:
         # check that the number of time steps is greater than the number of parameters
         if assets["$0"].shape[0] < self.n_params:
-            logger.error(
-                f"Fit is underconstrained. Number of time steps ({assets['landsat'].shape[0]}) must be greater than the number of parameters ({self.n_params})"
-            )
             raise ValueError(
                 f"Fit is underconstrained. Number of time steps ({assets['landsat'].shape[0]}) must be greater than the number of parameters ({self.n_params})"
             )
