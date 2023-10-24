@@ -35,3 +35,19 @@ least squares regression because of missing data. Some time steps will be empty 
 $$ A^T (M \cdot (AX)) = A^T (M \cdot B) $$
 
 Where $A$ is the Fourier series matrix, $B$ is the transformed data, $M$ is a mask of the data, and $X$ is the vector of coefficients. The mask is a matrix of 1's and 0's where 1's represent valid data and 0's represent missing data. This can easily be solved by numpy's `linalg.solve` function.
+
+
+## Repo Contents
+
+### `HarmonicRegressionDemo.ipynb`
+
+This notebook explains the process of harmonic regression and shows some simple tests.
+
+### `submit_model.ipynb`
+
+This notebook contains the Tesseract Job description and submits the job.
+
+### `harmonic_regression.py`
+
+The main harmonic regression code that runs using the Tesseract SDK. This is the file that is the entrypoint
+to the container run in the tesseract job.
