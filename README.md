@@ -1,8 +1,12 @@
 # Run Harmonic Regression Using Tesseract
 
-![Tesseract](img/tesseract.png) ![Geodesic](img/geodesic.png)
+<img src="img/seerai_logo.png" width=505/><img src="img/tesseract.png"/>
 
-Harmonic regression is a type of time series analysis that is commonly used in forestry and agriculture. It looks for temporal paterns that repeat over a well defined time interval, in this case yearly. Harmonic regression can be used to understand the trends in certain patterns of spectral data as well as predict out into the future for use in vegetation management, forest health and land cover modeling. This technique is commonly used by the US Forest Service in order to understand the health and seasonal changes of forest inventories. While most often used for vegetation, harmonic regression can be used for modeling any kind of temporal patter that repeats in regular intervals.
+This demo will show how SeerAI's platform (Geodesic) can make a complex data analysis workflow much easier, faster (and less costly) without having to move large data sets with our innovative computation engine (Tesseract). The source data (Landsat satellite) is located on Google Earth Engine and we will use our Boson tool to point to that repository and establish a reference to the data in Geodesic's Knowledge Graph. With that reference to the data stored in our graph, the knowledge of where that data sits, how to get to it at the right time, and what it is useful for is all now ready for the model to use. This demo shows how this will allow the Tesseract Computation Engine to reach out and gather the data, then process it at scale, with speed that is many times faster than current geospatial tools allow.
+
+<img src="img/graph.png" width=800/>
+
+To demonstrate Tesseract we perform a harmonic regression which is a type of time series analysis that is commonly used in forestry and agriculture. It looks for temporal paterns that repeat over a well defined time interval, in this case yearly. Harmonic regression can be used to understand the trends in certain patterns of spectral data as well as predict out into the future for use in vegetation management, forest health and land cover modeling. This technique is commonly used by the US Forest Service in order to understand the health and seasonal changes of forest inventories. While most often used for vegetation, harmonic regression can be used for modeling any kind of temporal patter that repeats in regular intervals.
 
 In this example we will fit a Fourier series to Landsat-8 data using the Geodesic Platform. The Landsat data is located on Google Earth Engine and we will use a boson to add it to the Geodesic Knowledge Graph which will allow the Tesseract Computation Engine to reach out and gather the data, then process it at scale. In the modeling step we first transform the first 6 spectral bands of Landsat data with the Tasseled Cap Transformaion (TCT). This takes the spectral bands and extracts 3 new bands from them called brightness, greenness, and wetness. We then fit an n-th order Fourier Series to the transormed data. The parameters we are looking for are the coefficients of the following series:
 
@@ -20,7 +24,7 @@ In reality the data is much messier than this nice Sine function. Landsat data c
 
 This shows a fit over about 5 years of Landsat data but only for a single pixel. In practice you must fit a series for every pixel in the area and store all of the parameters as a multidimensional array of data. This is where Tesseract comes in. Tesseract allows us to gather the data, split it into chunks, then efficiently process each of the chunks. Because Tesseract treats time as a first class citizen, we are able to accomidate many kinds of spatial, temporal and spatio-temporal analytics easily. In this analysis we perform more than 2.2 million fits across 200 time steps.
 
-![](img/time-fit.png)
+<img src="img/time-fit.png" width=800/>
 
 
 ## Fitting Using Least Squares Regression
