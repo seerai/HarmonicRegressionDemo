@@ -6,7 +6,6 @@ Based on the techniques used in: https://www.sciencedirect.com/science/article/a
 import logging
 from tesseract import serve, get_model_args
 import numpy as np
-import time
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -19,6 +18,13 @@ class Model:
         self.n_params = 2 * self.forder + 2
 
     def inference(self, assets: dict, grids: dict, logger: logging.Logger, **kwargs) -> dict:
+        """The function to run over each chunk of the data.
+
+        Args:
+            assets (dict): Dictionary of assets. The keys are the names of the assets and the values are the data.
+            grids (dict): Dictionary of grids. The keys are the names of the grids and the values are the data.
+            logger (logging.Logger): Logger to use for logging. Anything logged here will be available in the output.
+        """
         # check that the number of time steps is greater than the number of parameters
         if assets["$0"].shape[0] < self.n_params:
             raise ValueError(
@@ -39,6 +45,7 @@ class Model:
         }
 
     def get_model_info(self):
+        """Get the model info. This is used to validate the inputs and outputs of the model."""
         return {
             "inputs": [{"name": "landsat", "dtype": "i2", "shape": [200, 6, 256, 256]}],
             "outputs": [
@@ -92,17 +99,13 @@ def censored_lstsq(A, B, M):
     the whole fit on that row will be NaN.
 
     Args:
-        A (ndarray) : m x r matrix
-        B (ndarray) : m x n matrix
-        M (ndarray) : m x n binary masking matrix (zeros indicate missing values)
+        A (np.ndarray) : m x r matrix
+        B (np.ndarray) : m x n matrix
+        M (np.ndarray) : m x n binary masking matrix (zeros indicate missing values)
 
     Returns:
         X (ndarray) : r x n matrix that minimizes norm(M*(AX - B))
     """
-
-    # Note: we should check A is full rank but we won't bother...
-
-    # if B is a vector, simply drop out corresponding rows in A
     if B.ndim == 1 or B.shape[1] == 1:
         return np.linalg.leastsq(A[M], B[M])[0]
 
