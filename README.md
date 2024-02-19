@@ -2,6 +2,9 @@
 
 <img src="img/seerai_logo.png" width=505/><img src="img/tesseract.png"/>
 
+Youtube Demo Video:
+[![Harmonic Regression Demo](https://img.youtube.com/vi/JDUuS5M3m3E/0.jpg)](https://youtu.be/JDUuS5M3m3E)
+
 This demo will show how SeerAI's platform (Geodesic) can make a complex data analysis workflow much 
 easier, faster (and less costly) without having to move large data sets with our innovative 
 computation engine (Tesseract). The source data (Landsat satellite) is located on Google Earth 
@@ -86,14 +89,24 @@ data and 0's represent missing data. This can easily be solved by numpy's `linal
 ## Repo Contents
 
 ### `HarmonicRegressionDemo.ipynb`
-
 This notebook explains the process of harmonic regression and shows some simple tests.
 
 ### `submit_model.ipynb`
-
 This notebook contains the Tesseract Job description and submits the job.
 
 ### `harmonic_regression.py`
-
 The main harmonic regression code that runs using the Tesseract SDK. This is the file that is the
-entrypoint to the container run in the tesseract job.
+entrypoint to the container run in the tesseract job. It implements the Tesseract Python SDK and is
+an example of how to add any custom code to the Tesseract Computation Engine.
+
+### `dockerfile`
+The Dockerfile that is used to build the container that runs in Tesseract. 
+
+### `requirements.txt`
+This requirements file is used to install the necessary packages in the container. It is only used
+in the docker build process and contains only the packages that are needed to run the model.
+
+### `requirements-dev.txt`
+This requirements file is used to install the necessary packages for development. It contains the
+packages needed to run the notebooks and the local validation of the docker image. It is not strictly
+necessary to have two requirmenets files but it keeps the docker image as small as possible.
