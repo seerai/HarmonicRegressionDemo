@@ -54,7 +54,7 @@ This shows a fit over about 5 years of Landsat data but only for a single pixel.
 must fit a series for every pixel in the area and store all of the parameters as a multidimensional
 array of data. This is where Tesseract comes in. Tesseract allows us to gather the data, split it
 into chunks, then efficiently process each of the chunks. Because Tesseract treats time as a first
-class citizen, we are able to accomidate many kinds of spatial, temporal and spatio-temporal
+class citizen, we are able to accomodate many kinds of spatial, temporal and spatio-temporal
 analytics easily. In this analysis we perform more than 2.2 million fits across 200 time steps. This
 is a very large amount of data that would be incredibly time consuming and expensive even just to
 gather and manage. Mosaicing, stacking, spatial and temporal alignment of even a single dataset is
