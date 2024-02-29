@@ -1,0 +1,90 @@
+modelset:
+  name: harmonic-regression-model
+  alias: Harmonic Regression Model
+  description: >
+    This model is used to do a harmonic regression fit with given order to a time series of 
+    Electro-Optical Earth observation data. This model requires R,G,B,NIR,SWIR1,SWIR2 bands and
+    does a tasselled cap transformation of the data before fitting. It outputs the brightness,
+    greenness and wetness parameters of the harmonic regression fit.
+  project: har-reg
+  version: "0.0.1"
+  keywords: ["ML", "harmonic", "regression", "fourier", "timeseries", "model"]
+  metadata: {}
+  license: "apache"
+  created: "2024-01-28T00:00:00+00:00"
+  updated: "2024-01-28T00:00:00+00:00"
+  data_api: stac
+  item_type: model
+  domain: remote-sensing
+  category: earth-observation
+  type: multispectral
+
+  extent:
+    spatial:
+      bbox: [[-180.0, -90.0, 180.0, 90.0]]
+    temporal:
+      interval: [["2013-01-01T00:00:00Z", "2040-01-01T00:00:00Z"]]
+
+  # Kubernetes service that exposes it
+  services: ["spacetime"]
+  index_pattern: "example-model"
+  version_control:
+    provider: "www.github.com"
+    repo: "seerai/HarmonicRegressionDemo"
+    path: ""
+    commit: "5e3e9cc8871e99f78d53ba0d8dfddfab567aca50"
+  boson_config: {}
+  tesseract_config:
+    name: "harmonic-regression"
+    type: "model"
+    inputs:
+      - {
+          "asset_name": "input-imagery",
+          "spatial_chunk_shape": [512, 512],
+          "overlap": 0,
+          "bands": [0, 1, 2, 3, 4, 5],
+          "type": "tensor",
+        }
+    outputs:
+      - {
+          "asset_name": "brightness-parameters",
+          "chunk_shape": [1, 10, 512, 512],
+          "type": "tensor",
+          "pixel_dtype": "<f8",
+          "fill_value": "nan",
+        }
+      - {
+          "asset_name": "greenness-parameters",
+          "chunk_shape": [1, 10, 512, 512],
+          "type": "tensor",
+          "pixel_dtype": "<f8",
+          "fill_value": "nan",
+        }
+      - {
+          "asset_name": "wetness-parameters",
+          "chunk_shape": [1, 10, 512, 512],
+          "type": "tensor",
+          "pixel_dtype": "<f8",
+          "fill_value": "nan",
+        }
+
+  # STAC/OAFeat stuff
+  links:
+    - href: "https://github.com/example-model"
+      type: "text/html"
+      rel: "documentation"
+
+  stac_extensions: ["item-assets", "model"]
+  providers:
+    - name: "SeerAI"
+      roles: ["processor", "host"]
+      url: "https://seerai.space"
+  item_assets:
+    thumbnail:
+      title: "thumbnail"
+      type: "image/jpeg"
+      roles: ["thumbnail"]
+    infer_image:
+      title: "Docker image to run inference"
+      type: "application/octet-stream; application=docker"
+      model:output-type: ["tensor"]
